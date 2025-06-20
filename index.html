@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fee Voucher Generator - Unique Science Academy</title>
+    <!-- We use a CDN for this library to enable the "Save as PNG" feature -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        /* General Page Styling */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        /* --- CONTROLS PANEL STYLING --- */
+        .controls {
+            width: 350px;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            height: fit-content;
+        }
+
+        .controls h2 {
+            text-align: center;
+            color: #1e3a8a; /* A deep blue color */
+            margin-top: 0;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .input-group input,
+        .input-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box; /* Important for padding and width */
+        }
+        
+        .input-group input[type="number"] {
+            font-weight: bold;
+        }
+
+        .actions {
+            margin-top: 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .actions button {
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+
+        .actions button:active {
+            transform: scale(0.98);
+        }
+
+        .print-btn {
+            background-color: #1e3a8a;
+            color: white;
+        }
+        .print-btn:hover {
+            background-color: #1c327a;
+        }
+
+        .save-btn {
+            background-color: #16a34a; /* Green */
+            color: white;
+        }
+        .save-btn:hover {
+            background-color: #15803d;
+        }
+
+
+        /* --- VOUCHER STYLING (A4 Simulation) --- */
+        .voucher-wrapper {
+            width: 21cm; /* A4 width */
+            min-height: 29.7cm; /* A4 height */
+            padding: 1.5cm;
+            background-color: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            box-sizing: border-box;
+        }
+        
+        #voucher-container {
+             border: 2px solid #333;
+             padding: 20px;
+        }
+
+        .voucher-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #1e3a8a;
+            padding-bottom: 15px;
+        }
+
+        .voucher-header img {
+            width: 100px;
+            height: 100px;
+        }
+
+        .academy-info {
+            text-align: right;
+        }
+
+        .academy-info h1 {
+            margin: 0;
+            color: #1e3a8a;
+            font-size: 28px;
+        }
+
+        .academy-info p {
+            margin: 5px 0 0;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .voucher-title {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 22px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .voucher-details {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+
+        .detail-item p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+
+        .detail-item span {
+            font-weight: bold;
+        }
+
+        .fees-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .fees-table th, .fees-table td {
+            border: 1px solid #ccc;
+            padding: 12px;
+            font-size: 14px;
+        }
+
+        .fees-table th {
+            background-color: #eef2ff;
+            text-align: left;
+            font-weight: 600;
+            color: #1e3a8a;
+        }
+
+        .fees-table .description-col {
+            width: 70%;
+        }
+        
+        .fees-table .amount-col {
+            width: 30%;
+            text-align: right;
+        }
+        
+        .fees-table tr.total-row td {
+            font-weight: bold;
+            font-size: 16px;
+            background-color: #eef2ff;
+        }
+        
+        .voucher-footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px dashed #999;
+            font-size: 12px;
+            color: #555;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        
+        .footer-notes p {
+            margin: 0 0 5px;
+        }
+        
+        .dev-credit {
+            text-align: right;
+            font-style: italic;
+        }
+
+        /* --- PRINT STYLES --- */
+        @media print {
+            body {
+                background-color: #fff;
+                padding: 0;
+                margin: 0;
+            }
+
+            .controls {
+                display: none; /* Hide controls when printing */
+            }
+
+            .voucher-wrapper {
+                width: 100%;
+                min-height: 0;
+                box-shadow: none;
+                padding: 0;
+                margin: 0;
+            }
+            
+            #voucher-container {
+                border: 2px solid #000;
+                page-break-after: always; /* Ensure each voucher is on a new page */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- LEFT PANEL: CONTROLS FOR THE GENERATOR -->
+    <div class="controls">
+        <h2>Voucher Generator</h2>
+
+        <div class="input-group">
+            <label for="studentName">Student Name</label>
+            <input type="text" id="studentName" placeholder="e.g., Ali Ahmed">
+        </div>
+
+        <div class="input-group">
+            <label for="fatherName">Father Name</label>
+            <input type="text" id="fatherName" placeholder="e.g., Ahmed Khan">
+        </div>
+        
+        <div class="input-group">
+            <label for="voucherMonth">Voucher for Month</label>
+            <select id="voucherMonth">
+                <option value="January">January</option>
+                <option value="February">February</option>
+                <option value="March">March</option>
+                <option value="April">April</option>
+                <option value="May">May</option>
+                <option value="June">June</option>
+                <option value="July">July</option>
+                <option value="August">August</option>
+                <option value="September">September</option>
+                <option value="October">October</option>
+                <option value="November">November</option>
+                <option value="December">December</option>
+            </select>
+        </div>
+        
+        <div class="input-group">
+            <label for="dueDate">Due Date</label>
+            <input type="date" id="dueDate">
+        </div>
+
+        <hr style="margin: 20px 0;">
+
+        <div class="input-group">
+            <label for="tuitionFee">Tuition Fee (PKR)</label>
+            <input type="number" id="tuitionFee" value="5000" min="0">
+        </div>
+
+        <div class="input-group">
+            <label for="testFee">Test Session Fee (PKR)</label>
+            <input type="number" id="testFee" value="0" min="0">
+        </div>
+        
+        <div class="input-group">
+            <label for="fine">Fine (PKR)</label>
+            <input type="number" id="fine" value="0" min="0">
+        </div>
+        
+        <div class="input-group">
+            <label for="otherFees">Other Fees (PKR)</label>
+            <input type="number" id="otherFees" value="0" min="0">
+        </div>
+        
+        <div class="input-group">
+            <label for="scholarship">Scholarship / Discount (PKR)</label>
+            <input type="number" id="scholarship" value="0" min="0">
+        </div>
+
+        <div class="actions">
+            <button class="print-btn" onclick="window.print()">🖨️ Print Voucher</button>
+            <button class="save-btn" onclick="saveAsPng()">💾 Save as PNG</button>
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL: THE VOUCHER ITSELF -->
+    <div class="voucher-wrapper">
+        <div id="voucher-container">
+            <!-- VOUCHER HEADER -->
+            <div class="voucher-header">
+                <img src="logo.png" alt="Academy Logo">
+                <div class="academy-info">
+                    <h1>Unique Science Academy</h1>
+                    <p>Kot Abdul Malik Campus</p>
+                   
+                </div>
+            </div>
+
+            <!-- VOUCHER TITLE -->
+            <div class="voucher-title">
+                FEE VOUCHER (<span id="voucher-month-display">Month</span> <span id="voucher-year-display">Year</span>)
+            </div>
+
+            <!-- STUDENT & DATE DETAILS -->
+            <div class="voucher-details">
+                <div class="detail-item student-info">
+                    <p>Student Name: <span id="voucher-student-name"></span></p>
+                    <p>Father Name: <span id="voucher-father-name"></span></p>
+                </div>
+                <div class="detail-item date-info" style="text-align: right;">
+                    <p>Issue Date: <span id="issue-date"></span></p>
+                    <p>Due Date: <span id="voucher-due-date" style="color: red;"></span></p>
+                </div>
+            </div>
+
+            <!-- FEES TABLE -->
+            <table class="fees-table">
+                <thead>
+                    <tr>
+                        <th class="description-col">Fee Description</th>
+                        <th class="amount-col">Amount (PKR)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Tuition Fee</td>
+                        <td class="amount-col" id="voucher-tuition-fee">0.00</td>
+                    </tr>
+                    <tr>
+                        <td>Test Session Fee</td>
+                        <td class="amount-col" id="voucher-test-fee">0.00</td>
+                    </tr>
+                    <tr>
+                        <td>Fine</td>
+                        <td class="amount-col" id="voucher-fine">0.00</td>
+                    </tr>
+                    <tr>
+                        <td>Other Fees</td>
+                        <td class="amount-col" id="voucher-other-fees">0.00</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td><strong>Sub Total</strong></td>
+                        <td class="amount-col" id="voucher-sub-total"><strong>0.00</strong></td>
+                    </tr>
+                     <tr>
+                        <td>Scholarship / Discount</td>
+                        <td class="amount-col" id="voucher-scholarship">(0.00)</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td><strong>Total Payable (within Due Date)</strong></td>
+                        <td class="amount-col" id="voucher-total-payable"><strong>0.00</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <!-- FOOTER & NOTES -->
+            <div class="voucher-footer">
+                <div class="footer-notes">
+                    <p><strong>Payment Instructions:</strong></p>
+                    <p>1. Please pay the fee at the designated bank/office counter before the due date.</p>
+                    <p>2. A late payment surcharge will be applied after the due date.</p>
+                    <p>3. This is a computer-generated voucher and does not require a signature.</p>
+                </div>
+                <div class="dev-credit">
+                    <p>Software Developed By<br><strong>Abdullah Hashmi</strong></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // --- JAVASCRIPT LOGIC ---
+
+    // Function to update the voucher display in real-time
+    function updateVoucher() {
+        // Get values from input fields
+        const studentName = document.getElementById('studentName').value;
+        const fatherName = document.getElementById('fatherName').value;
+        const voucherMonth = document.getElementById('voucherMonth').value;
+        const dueDate = document.getElementById('dueDate').value;
+
+        // Parse numbers, defaulting to 0 if empty or invalid
+        const tuitionFee = parseFloat(document.getElementById('tuitionFee').value) || 0;
+        const testFee = parseFloat(document.getElementById('testFee').value) || 0;
+        const fine = parseFloat(document.getElementById('fine').value) || 0;
+        const otherFees = parseFloat(document.getElementById('otherFees').value) || 0;
+        const scholarship = parseFloat(document.getElementById('scholarship').value) || 0;
+
+        // Calculations
+        const subTotal = tuitionFee + testFee + fine + otherFees;
+        const totalPayable = subTotal - scholarship;
+
+        // Get current date for Issue Date and Year
+        const today = new Date();
+        const currentYear = today.getFullYear();
+        const issueDate = today.toLocaleDateString('en-GB'); // Format: DD/MM/YYYY
+
+        // Format due date if provided
+        const formattedDueDate = dueDate ? new Date(dueDate).toLocaleDateString('en-GB') : 'N/A';
+        
+        // --- Update the voucher display ---
+        document.getElementById('voucher-student-name').innerText = studentName || '_________________';
+        document.getElementById('voucher-father-name').innerText = fatherName || '_________________';
+        document.getElementById('voucher-month-display').innerText = voucherMonth;
+        document.getElementById('voucher-year-display').innerText = currentYear;
+        document.getElementById('issue-date').innerText = issueDate;
+        document.getElementById('voucher-due-date').innerText = formattedDueDate;
+        
+        // Update fee table (using .toFixed(2) for currency format)
+        document.getElementById('voucher-tuition-fee').innerText = tuitionFee.toFixed(2);
+        document.getElementById('voucher-test-fee').innerText = testFee.toFixed(2);
+        document.getElementById('voucher-fine').innerText = fine.toFixed(2);
+        document.getElementById('voucher-other-fees').innerText = otherFees.toFixed(2);
+        document.getElementById('voucher-sub-total').innerText = subTotal.toFixed(2);
+        document.getElementById('voucher-scholarship').innerText = `(${scholarship.toFixed(2)})`; // Show as a deduction
+        document.getElementById('voucher-total-payable').innerText = totalPayable.toFixed(2);
+    }
+    
+    // Function to save the voucher as a PNG image
+    function saveAsPng() {
+        const voucherElement = document.getElementById('voucher-container');
+        const studentName = document.getElementById('studentName').value || 'student';
+        const voucherMonth = document.getElementById('voucherMonth').value;
+        
+        // Use html2canvas to render the div as an image
+        html2canvas(voucherElement, {
+            scale: 2 // Increase scale for better resolution
+        }).then(canvas => {
+            // Create a link element
+            const link = document.createElement('a');
+            // Set the download attribute with a dynamic filename
+            link.download = `Fee_Voucher_${studentName.replace(/ /g, '_')}_${voucherMonth}.png`;
+            // Set the href to the canvas's data URL
+            link.href = canvas.toDataURL('image/png');
+            // Trigger a click on the link to start the download
+            link.click();
+        });
+    }
+
+    // Set default values on page load
+    function initialize() {
+        // Set default month to current month
+        const currentMonthIndex = new Date().getMonth();
+        document.getElementById('voucherMonth').selectedIndex = currentMonthIndex;
+        
+        // Set a default due date (e.g., 10th of next month)
+        const today = new Date();
+        const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 10);
+        document.getElementById('dueDate').value = nextMonth.toISOString().split('T')[0];
+        
+        // Initial call to populate the voucher with default values
+        updateVoucher();
+    }
+    
+    // Add event listeners to all input fields to call updateVoucher on any change
+    const inputs = document.querySelectorAll('.controls input, .controls select');
+    inputs.forEach(input => {
+        input.addEventListener('input', updateVoucher);
+    });
+
+    // Initialize the form when the page loads
+    window.onload = initialize;
+
+</script>
+</body>
+</html>
